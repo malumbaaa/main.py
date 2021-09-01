@@ -56,7 +56,7 @@ class Cart(models.Model):
 
 
 class CartProduct(models.Model):
-    cart_id = models.ForeignKey(Cart, on_delete=models.CASCADE, verbose_name='cart_id', primary_key=True)
+    cart_id = models.ForeignKey(Cart, on_delete=models.CASCADE, verbose_name='cart_id', primary_key=True, auto_created=True)
     product_id = models.ManyToManyField(Product, verbose_name='Products')
 
     def __str__(self):

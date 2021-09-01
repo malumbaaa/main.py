@@ -1,5 +1,6 @@
 from rest_framework import generics
 from .serializer import *
+import requests
 
 
 class CustomerList(generics.ListCreateAPIView):
@@ -50,6 +51,16 @@ class CartProductList(generics.ListCreateAPIView):
 class CartProductDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = CartProduct.objects.all()
     serializer_class = CartProductSerializer
+
+
+def Cart_view(request):
+    print(request.content_params)
+    cart = Cart.objects.get(id=request.GET['cart_id'])
+    requests.put(f"http://127.0.0.1:8000/api/cart_product/request.GET['cart_id']/",
+                 json={"product_id":request.GET['product_id'],
+                       "id": cart},
+                 headers={"Content-Type": "application/json"})
+
 
 
 

@@ -83,11 +83,16 @@ WSGI_APPLICATION = 'bot_back.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-from config import db
+
 
 DATABASES = {
     'default': {
-        db
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'bot_db',
+        'USER': 'bot_admin',
+        'PASSWORD': 'login',
+        'HOST': '127.0.0.1',
+        'PORT': 5432
     }
 }
 

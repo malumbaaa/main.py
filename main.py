@@ -106,9 +106,24 @@ def call_back_payment(call):
       """)
     elif call.data in str(ids):
         print(call.data)
-        url = f"http://127.0.0.1:8000/api/cart/{call.message.from_user.id}/"
-        cart = requests.get(url).json()
-        requests.put(f"http://127.0.0.1:8000/api/product_cart/{cart[0]['cart_id']}/", data={"product_id": call.data})
+        url = f"http://127.0.0.1:8000/api/cart/"
+        carts = requests.get(url).json()
+        print(carts, "это карты")
+        cart_user = {}
+        for cart in carts:
+            print(int(call.message.chat.id), cart['customer_id'])
+            if cart['customer_id'] == call.message.chat.id:
+                print(cart)
+                cart_user = cart
+                break
+
+        cart_product = requests.get(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/").json()
+        # print(cart_product)
+        # requests.delete(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/")
+        test = cart_product['product_id']
+        requests.get(f"http://127.0.0.1:8000/api/cart_test/", params={"product_id": [call.data, *test],
+                                                                     'cart_id': cart_user['id']},
+                      headers={"Content-Type": "application/json"})
         bot.send_message(call.message.chat.id, text="Товар успешно добавлен в корзину")
 
 

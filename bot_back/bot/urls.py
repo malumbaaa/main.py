@@ -10,7 +10,8 @@ urlpatterns =[
     path('product_photo/', ProductPhotoList.as_view()),
     path('product_photo/<int:pk>/', ProductPhotoDetail.as_view()),
     path('cart/', CartList.as_view()),
-    path('cart/<int:customer_id>/', CartDetail.as_view()),
+    path('cart/<int:pk>/', CartDetail.as_view()),
     path('cart_product/', CartProductList.as_view()),
-    path('cart_product/<int:cart_id>/', CartProductDetail.as_view()),
+    path('cart_product/<int:pk>/', CartProductDetail.as_view()),
+    path('cart_test/', Cart_view)
 ]
