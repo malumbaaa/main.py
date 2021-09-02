@@ -24,8 +24,15 @@ class CartAdmin(admin.ModelAdmin):
     list_display = ['id', 'customer_id']
 
 
+class OrdersAdmin(admin.ModelAdmin):
+    filter_horizontal = ('products',)
+    save_on_top = True
+    list_display = ['id',  'money', 'date_come', 'date_out', 'status']
+
+
 admin.site.register(Customer, CustomerAdmin)
 admin.site.register(Product, ProductAdmin)
 admin.site.register(ProductPhoto, ProductPhotoAdmin)
 admin.site.register(Cart, CartAdmin)
 admin.site.register(CartProduct, CartProductAdmin)
+admin.site.register(Orders, OrdersAdmin)

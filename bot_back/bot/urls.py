@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import *
+from rest_framework import routers
 
 
 urlpatterns =[
@@ -13,5 +14,7 @@ urlpatterns =[
     path('cart/<int:pk>/', CartDetail.as_view()),
     path('cart_product/', CartProductList.as_view()),
     path('cart_product/<int:pk>/', CartProductDetail.as_view()),
-    path('cart_test/', Cart_view)
+    path('order/', OrderList.as_view()),
+    path('order/<int:pk>/', OrderDetail.as_view()),
+
 ]

@@ -48,19 +48,45 @@ class CartProductList(generics.ListCreateAPIView):
     serializer_class = CartProductSerializer
 
 
+
 class CartProductDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = CartProduct.objects.all()
     serializer_class = CartProductSerializer
 
+    def put(self, request, *args, **kwargs):
+        print(kwargs)
+        print(request.data)
+        print(type(Cart.objects.get(id=kwargs['pk'])))
+        check = Cart.objects.get(id=kwargs['pk'])
+        print(request.data['product_id'])
+        return super(CartProductDetail, self).put(request, cart_id=check,
+                                                            product_id=request.data['product_id'],
+                                                  kwargs={'prikol': request.data})
 
-def Cart_view(request):
-    print(request.content_params)
-    cart = Cart.objects.get(id=request.GET['cart_id'])
-    requests.put(f"http://127.0.0.1:8000/api/cart_product/request.GET['cart_id']/",
-                 json={"product_id":request.GET['product_id'],
-                       "id": cart},
-                 headers={"Content-Type": "application/json"})
 
+class OrderList(generics.ListCreateAPIView):
+    queryset = Orders.objects.all()
+    serializer_class = OrderSerializer
+
+    def post(self, request, *args, **kwargs):
+            customer = Customer.objects.get(id=request.data['user_id'])
+            # print(request.data['products'])
+            # products = Product.objects.filter(id=request.data['products'][0]['id'])
+            # print(products)
+            money = 30
+            # for i in request.data['products'][1:]:
+            #     products |= Product.objects.filter(id=i['id'])
+            #     money += i['price']
+            # print(products, 'каго')
+            return super(OrderList, self).post(request, user_id=customer,
+                                               status=request.data['status'],
+                                               money=money,
+                                               products=[2])
+
+
+class OrderDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Orders.objects.all()
+    serializer_class = OrderSerializer
 
 
 

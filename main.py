@@ -12,7 +12,13 @@ btn_address = types.KeyboardButton('Адреса магазинов', request_lo
 btn_payment = types.KeyboardButton('Способы оплаты')
 btn_delivery = types.KeyboardButton('Способы доставки')
 btn_catalog = types.KeyboardButton('Каталог')
-markup_menu.add(btn_address, btn_payment, btn_delivery, btn_catalog)
+btn_cart = types.KeyboardButton('Посмотреть корзину')
+markup_menu.add(btn_address, btn_payment, btn_delivery, btn_catalog, btn_cart)
+
+markup_menu2 = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+btn_buy = types.KeyboardButton('Купить')
+btn_main_menu = types.KeyboardButton('Главное меню')
+markup_menu2.add(btn_buy, btn_main_menu)
 
 markup_inline_payment = types.InlineKeyboardMarkup()
 btn_in_cash = types.InlineKeyboardButton('Наличные', callback_data='cash')
@@ -21,7 +27,11 @@ btn_in_bank = types.InlineKeyboardButton('Банкоский перевод', ca
 
 markup_inline_payment.add(btn_in_bank, btn_in_card, btn_in_cash)
 
-
+markup_inline_delivery = types.InlineKeyboardMarkup()
+btn_in_courier = types.InlineKeyboardButton('Курьером', callback_data='courier')
+btn_in_post = types.InlineKeyboardButton('Почтой', callback_data='post')
+btn_in_pickup = types.InlineKeyboardButton('Самовывоз', callback_data='pickup')
+markup_inline_delivery.add(btn_in_courier, btn_in_post, btn_in_pickup)
 
 
 @bot.message_handler(commands=['start', 'help'])
@@ -45,29 +55,18 @@ def echo_all(message):
         products = requests.get("http://127.0.0.1:8000/api/product/").json()
         photos = requests.get("http://127.0.0.1:8000/api/product_photo/").json()
         print(photos, "Это photos")
-        for product in products:
-            for photo in photos:
-                if product["id"] == photo["product_id"]:
-                    try:
-                        f = open('out.jpg', 'wb')
-                        f.write(urllib.request.urlopen(photo['url']).read())
-                        f.close()
-                    except urllib.error.HTTPError:
-                        print("У нас тут ошибка")
-                    else:
-                        markup_inline_add_to_cart = types.InlineKeyboardMarkup()
-                        btn_add_to_cart = types.InlineKeyboardButton('Добавить в корзину',
-                                                                     callback_data=product['id'])
-                        markup_inline_add_to_cart.add(btn_add_to_cart)
-                        img = open('out.jpg', 'rb')
-                        bot.send_photo(message.chat.id, img,
-                                       caption=f"{product['name']}\n{product['description']}\n" +
-                                               f"Цена: {product['price']}$", reply_markup=markup_inline_add_to_cart)
-                        img.close()
-                    break
+        view_products(products, photos, message.chat.id, 'Добавить в корзину')
         print(products)
+    elif message.text == "Посмотреть корзину":
+        check_cart(message)
+    elif message.text == "Главное меню":
+        bot.reply_to(message, "Возвращаемся", reply_markup=markup_menu)
+    elif message.text == "Купить":
+        bot.send_message(message.chat.id, "Выберите способ доставки:",
+                         reply_markup=markup_inline_delivery)
     else:
         bot.reply_to(message, "Не могу тебя понять, напиши /help")
+
 
 
 @bot.message_handler(func=lambda message: True, content_types=['location'])
@@ -105,27 +104,94 @@ def call_back_payment(call):
         реквизиты банка: ALFA BY63220123214213
       """)
     elif call.data in str(ids):
-        print(call.data)
+        mode = ''
+        text = ''
+        if call.message.reply_markup.to_dict()['inline_keyboard'][0][0]['text'] == 'Добавить в корзину':
+            mode = 'update'
+            text = "Товар успешно добавлен в корзину"
+        elif call.message.reply_markup.to_dict()['inline_keyboard'][0][0]['text'] == 'Убрать из корзины':
+            mode = 'remove'
+            text = "Товар успешно убран из корзину"
+        print(call.message.reply_markup.to_dict()['inline_keyboard'][0][0]['text'])
+        print(call.data, "это кол")
         url = f"http://127.0.0.1:8000/api/cart/"
         carts = requests.get(url).json()
         print(carts, "это карты")
         cart_user = {}
         for cart in carts:
-            print(int(call.message.chat.id), cart['customer_id'])
             if cart['customer_id'] == call.message.chat.id:
-                print(cart)
                 cart_user = cart
                 break
+        response = requests.put(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/", json={"product_id": [int(call.data)],
+                                                                                                    "cart_id": cart_user['id'],
+                                                                                                    "mode": mode},
+                     headers={"Content-type": "application/json"})
+        if mode == 'update':
+            bot.send_message(call.message.chat.id, text=text, reply_markup=markup_menu)
+        if mode == 'remove':
+            bot.send_message(call.message.chat.id, text=text, reply_markup=markup_menu2)
+            check_cart(call.message)
+    elif call.data in ['courier','post', 'pickup']:
+        url = f"http://127.0.0.1:8000/api/cart/"
+        carts = requests.get(url).json()
+        cart_user = {}
+        for cart in carts:
+            print(int(call.message.chat.id), cart['customer_id'])
+            if cart['customer_id'] == call.message.chat.id:
+                cart_user = cart
+                break
+        cart = requests.get(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/").json()
+        products = [requests.get(f"http://127.0.0.1:8000/api/product/{product_id}/").json() for product_id in
+                    cart['product_id']]
+        response = requests.post("http://127.0.0.1:8000/api/order/", json={"user_id": call.message.chat.id,
+                                                                "products":[2],
+                                                                "status": "Поступил",
+                                                                "delivery": call.data})
+        print(response)
+        print(response.content)
 
-        cart_product = requests.get(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/").json()
-        # print(cart_product)
-        # requests.delete(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/")
-        test = cart_product['product_id']
-        requests.get(f"http://127.0.0.1:8000/api/cart_test/", params={"product_id": [call.data, *test],
-                                                                     'cart_id': cart_user['id']},
-                      headers={"Content-Type": "application/json"})
-        bot.send_message(call.message.chat.id, text="Товар успешно добавлен в корзину")
 
+def view_products(products, photos, chat_id, message_markup):
+    for product in products:
+        for photo in photos:
+            if product["id"] == photo["product_id"]:
+                try:
+                    f = open('out.jpg', 'wb')
+                    f.write(urllib.request.urlopen(photo['url']).read())
+                    f.close()
+                except urllib.error.HTTPError:
+                    print("У нас тут ошибка")
+                else:
+                    markup_inline_add_to_cart = types.InlineKeyboardMarkup()
+                    btn_add_to_cart = types.InlineKeyboardButton(message_markup,
+                                                                 callback_data=product['id'])
+                    markup_inline_add_to_cart.add(btn_add_to_cart)
+                    img = open('out.jpg', 'rb')
+                    bot.send_photo(chat_id, img,
+                                   caption=f"{product['name']}\n{product['description']}\n" +
+                                           f"Цена: {product['price']}$", reply_markup=markup_inline_add_to_cart)
+                    img.close()
+                break
+
+
+def check_cart(message):
+    url = f"http://127.0.0.1:8000/api/cart/"
+    carts = requests.get(url).json()
+    cart_user = {}
+    for cart in carts:
+        print(int(message.chat.id), cart['customer_id'])
+        if cart['customer_id'] == message.chat.id:
+            cart_user = cart
+            break
+    cart = requests.get(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/").json()
+    products = [requests.get(f"http://127.0.0.1:8000/api/product/{product_id}/").json() for product_id in
+                cart['product_id']]
+    photos = requests.get("http://127.0.0.1:8000/api/product_photo/").json()
+    view_products(products, photos, message.chat.id, 'Убрать из корзины')
+    if bool(products):
+        bot.send_message(message.chat.id, text="Ваша корзина", reply_markup=markup_menu2)
+    else:
+        bot.send_message(message.chat.id, text="Ваша корзина пуста", reply_markup=markup_menu)
 
 
 bot.polling()

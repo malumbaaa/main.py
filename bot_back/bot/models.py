@@ -67,4 +67,22 @@ class CartProduct(models.Model):
         verbose_name_plural = 'CartProducts'
 
 
+stats = [
+    ('Поступил', 'Поступил'),
+    ('Отправлен', 'Отправлен'),
+    ('Ожидает', 'Ожидает'),
+]
 
+
+class Orders(models.Model):
+    user_id = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='customer_id')
+    status = models.TextField(stats)
+    money = models.TextField(blank=True)
+    date_come = models.DateTimeField(auto_created=True, blank=True)
+    date_out = models.DateTimeField(blank=True)
+    delivery = models.CharField(max_length=40, default="Самовывоз")
+    products = models.ManyToManyField(Product, verbose_name='order_products')
+
+    class Meta:
+        verbose_name = 'Order'
+        verbose_name_plural = 'Orders'
