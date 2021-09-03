@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.utils import timezone
 
 class Customer(models.Model):
     id = models.IntegerField(primary_key=True, auto_created=True)
@@ -79,7 +79,7 @@ class Orders(models.Model):
     status = models.TextField(stats)
     money = models.TextField(blank=True)
     date_come = models.DateTimeField(auto_created=True, blank=True)
-    date_out = models.DateTimeField(blank=True)
+    date_out = models.DateTimeField(blank=True, default=timezone.now())
     delivery = models.CharField(max_length=40, default="Самовывоз")
     products = models.ManyToManyField(Product, verbose_name='order_products')
 

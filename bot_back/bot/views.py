@@ -72,15 +72,10 @@ class OrderList(generics.ListCreateAPIView):
             # print(request.data['products'])
             # products = Product.objects.filter(id=request.data['products'][0]['id'])
             # print(products)
-            money = 0
-            for i in request.data['products']:
-                 product = Product.objects.get(id=i)
-                 money += int(product.price)
             # print(products, 'каго')
             # check = Product.objects.get(id=2)
             return super(OrderList, self).post(request, user_id=customer,
                                                status=request.data['status'],
-                                               money=money,
                                                products=request.data['products'])
 
 

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import *
-
+from django.utils import timezone
 
 class CustomerSerializer(serializers.ModelSerializer):
 
@@ -65,6 +65,23 @@ class OrderSerializer(serializers.ModelSerializer):
         print(self)
         print(self.data)
         print(self.validated_data)
+        customer = Customer.objects.get(id=self.data['user_id'])
+        money = 0
+        for i in self.data['products']:
+            product = Product.objects.get(id=i)
+            money += product.price
+        if 'post' in str(self):
+            delivery = 'post'
+        if 'courier' in str(self):
+            delivery = 'courier'
+        if 'pickup' in str(self):
+            delivery = 'pickup'
+        order = Orders(user_id=customer, status=self.data['status'],
+                       money=money, delivery=delivery, date_come=timezone.now())
+        order.save()
+        for i in self.data['products']:
+            order.products.add(Product.objects.get(id=i))
+        order.save()
 
     class Meta:
         fields = ['user_id', 'products', 'money', 'date_come', 'date_out', 'status']

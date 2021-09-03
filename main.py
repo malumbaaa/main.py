@@ -155,6 +155,7 @@ def call_back_payment(call):
                                                                 "products":cart['product_id'],
                                                                 "status": "Поступил",
                                                                 "delivery": call.data})
+        requests.delete(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/")
         print(response)
         print(response.content)
 
@@ -192,8 +193,12 @@ def check_cart(message):
             cart_user = cart
             break
     cart = requests.get(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/").json()
-    products = [requests.get(f"http://127.0.0.1:8000/api/product/{product_id}/").json() for product_id in
-                cart['product_id']]
+    products = []
+    try:
+        products = [requests.get(f"http://127.0.0.1:8000/api/product/{product_id}/").json() for product_id in
+                    cart['product_id']]
+    except KeyError:
+        pass
     photos = requests.get("http://127.0.0.1:8000/api/product_photo/").json()
     view_products(products, photos, message.chat.id, 'Убрать из корзины')
     if bool(products):
