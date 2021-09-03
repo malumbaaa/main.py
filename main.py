@@ -36,12 +36,14 @@ markup_inline_delivery.add(btn_in_courier, btn_in_post, btn_in_pickup)
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    data = {"id": int(message.from_user.id), "name": message.from_user.first_name,
-            "surname": message.from_user.last_name if message.from_user.last_name is not None else "Нет",
-            "username": message.from_user.username}
-    print(data)
-    requests.post("http://127.0.0.1:8000/api/customer/", data=data)
-    requests.post("http://127.0.0.1:8000/api/cart/", json={"customer_id": data['id']})
+    response = requests.get(f"http://127.0.0.1:8000/api/customer/{int(message.from_user.id)}/",
+                            headers={"Content-type": "application/json"})
+    if response.status_code == 404:
+        data = {"id": int(message.from_user.id), "name": message.from_user.first_name,
+                "surname": message.from_user.last_name if message.from_user.last_name is not None else "Нет",
+                "username": message.from_user.username}
+        requests.post("http://127.0.0.1:8000/api/customer/", data=data)
+        requests.post("http://127.0.0.1:8000/api/cart/", json={"customer_id": data['id']})
     bot.reply_to(message, "Эй, привет! Я тестовый интернет магазин!)", reply_markup=markup_menu)
 
 
@@ -55,9 +57,7 @@ def echo_all(message):
     elif message.text == "Каталог":
         products = requests.get("http://127.0.0.1:8000/api/product/").json()
         photos = requests.get("http://127.0.0.1:8000/api/product_photo/").json()
-        print(photos, "Это photos")
         view_products(products, photos, message.chat.id, 'Добавить в корзину')
-        print(products)
     elif message.text == "Посмотреть корзину":
         check_cart(message)
     elif message.text == "Главное меню":
@@ -67,7 +67,6 @@ def echo_all(message):
                          reply_markup=markup_inline_delivery)
     else:
         bot.reply_to(message, "Не могу тебя понять, напиши /help")
-
 
 
 @bot.message_handler(func=lambda message: True, content_types=['location'])
@@ -113,8 +112,6 @@ def call_back_payment(call):
         elif call.message.reply_markup.to_dict()['inline_keyboard'][0][0]['text'] == 'Убрать из корзины':
             mode = 'remove'
             text = "Товар успешно убран из корзину"
-        print(call.message.reply_markup.to_dict()['inline_keyboard'][0][0]['text'])
-        print(call.data, "это кол")
         url = f"http://127.0.0.1:8000/api/cart/"
         carts = requests.get(url).json()
         print(carts, "это карты")
@@ -124,9 +121,9 @@ def call_back_payment(call):
                 cart_user = cart
                 break
         response = requests.put(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/", json={"product_id": [int(call.data)],
-                                                                                                     "cart_id": cart_user['id'],
+                                                                                                    "cart_id": cart_user['id'],
                                                                                                     "mode": mode},
-                     headers={"Content-type": "application/json"})
+                                headers={"Content-type": "application/json"})
         if response.status_code == 404:
             response = requests.post(f"http://127.0.0.1:8000/api/cart_product/", json={"product_id": [int(call.data)],
                                                                                        "cart_id": cart_user['id']},
@@ -138,7 +135,7 @@ def call_back_payment(call):
         if mode == 'remove':
             bot.send_message(call.message.chat.id, text=text, reply_markup=markup_menu2)
             check_cart(call.message)
-    elif call.data in ['courier','post', 'pickup']:
+    elif call.data in ['courier', 'post', 'pickup']:
         url = f"http://127.0.0.1:8000/api/cart/"
         carts = requests.get(url).json()
         cart_user = {}
@@ -148,13 +145,11 @@ def call_back_payment(call):
                 cart_user = cart
                 break
         cart = requests.get(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/").json()
-        products = [requests.get(f"http://127.0.0.1:8000/api/product/{product_id}/").json() for product_id in
-                    cart['product_id']]
         print(cart['product_id'])
         response = requests.post("http://127.0.0.1:8000/api/order/", json={"user_id": call.message.chat.id,
-                                                                "products":cart['product_id'],
-                                                                "status": "Поступил",
-                                                                "delivery": call.data})
+                                                                           "products": cart['product_id'],
+                                                                           "status": "Поступил",
+                                                                           "delivery": call.data})
         requests.delete(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/")
         print(response)
         print(response.content)
