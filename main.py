@@ -33,6 +33,16 @@ btn_in_post = types.InlineKeyboardButton('Почтой', callback_data='post')
 btn_in_pickup = types.InlineKeyboardButton('Самовывоз', callback_data='pickup')
 markup_inline_delivery.add(btn_in_courier, btn_in_post, btn_in_pickup)
 
+ilyas_menu = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+btn_orders = types.KeyboardButton('Посмотреть заказы')
+ilyas_menu.add(btn_orders)
+
+ilyas_inline = types.InlineKeyboardMarkup()
+btn_in_send = types.InlineKeyboardButton('Отправлен', callback_data='send')
+btn_in_wait = types.InlineKeyboardButton('Ожидает', callback_data='wait')
+btn_in_paid = types.InlineKeyboardButton('Оплачен', callback_data='paid')
+ilyas_inline.add(btn_in_send, btn_in_wait, btn_in_paid)
+
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
@@ -44,7 +54,10 @@ def send_welcome(message):
                 "username": message.from_user.username}
         requests.post("http://127.0.0.1:8000/api/customer/", data=data)
         requests.post("http://127.0.0.1:8000/api/cart/", json={"customer_id": data['id']})
-    bot.reply_to(message, "Эй, привет! Я тестовый интернет магазин!)", reply_markup=markup_menu)
+    if message.chat.id == config.ilyas_id:
+        bot.reply_to(message, "Здарова, пидрилкин", reply_markup=ilyas_menu)
+    else:
+        bot.reply_to(message, "Эй, привет! Я тестовый интернет магазин!)", reply_markup=markup_menu)
 
 
 @bot.message_handler(func=lambda message: True)
@@ -65,6 +78,20 @@ def echo_all(message):
     elif message.text == "Купить":
         bot.send_message(message.chat.id, "Выберите способ доставки:",
                          reply_markup=markup_inline_delivery)
+    elif message.text == "Посмотреть заказы" and message.chat.id == config.ilyas_id:
+        bot.send_message(message.chat.id, "Бля, короче тут заказы")
+        response = requests.get("http://127.0.0.1:8000/api/order/").json()
+        for order in response:
+            goods = "Вещи:\n"
+            for product in order['products']:
+                product_response = requests.get(f"http://127.0.0.1:8000/api/product/{product}/").json()
+                goods += f'{product_response["id"]} {product_response["name"]}\n'
+            bot.send_message(message.chat.id,
+                             f"""Пользователь {(requests.get(f"http://127.0.0.1:8000/api/customer/{order['user_id']}").json())["name"]}
+                              {goods} Заработок: {order['money']}$
+                              Дата поступления заказа: {order['date_come']}
+                              Статус: {order['status']}""", reply_markup=ilyas_inline)
+
     else:
         bot.reply_to(message, "Не могу тебя понять, напиши /help")
 
@@ -114,7 +141,6 @@ def call_back_payment(call):
             text = "Товар успешно убран из корзину"
         url = f"http://127.0.0.1:8000/api/cart/"
         carts = requests.get(url).json()
-        print(carts, "это карты")
         cart_user = {}
         for cart in carts:
             if cart['customer_id'] == call.message.chat.id:
@@ -128,8 +154,6 @@ def call_back_payment(call):
             response = requests.post(f"http://127.0.0.1:8000/api/cart_product/", json={"product_id": [int(call.data)],
                                                                                        "cart_id": cart_user['id']},
                                      headers={"Content-type": "application/json"})
-        print(response)
-        print(response.content)
         if mode == 'update':
             bot.send_message(call.message.chat.id, text=text, reply_markup=markup_menu)
         if mode == 'remove':
@@ -140,17 +164,19 @@ def call_back_payment(call):
         carts = requests.get(url).json()
         cart_user = {}
         for cart in carts:
-            print(int(call.message.chat.id), cart['customer_id'])
             if cart['customer_id'] == call.message.chat.id:
                 cart_user = cart
                 break
         cart = requests.get(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/").json()
-        print(cart['product_id'])
         response = requests.post("http://127.0.0.1:8000/api/order/", json={"user_id": call.message.chat.id,
                                                                            "products": cart['product_id'],
                                                                            "status": "Поступил",
                                                                            "delivery": call.data})
         requests.delete(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/")
+        if call.data == "courier" or call.data == "post":
+            bot.send_message(call.message.chat.id, "Введите ваш адрес: ")
+        else:
+            bot.send_message(call.message.chat.id, "Ваш заказ успешно принят")
         print(response)
         print(response.content)
 
