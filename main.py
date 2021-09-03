@@ -123,9 +123,15 @@ def call_back_payment(call):
                 cart_user = cart
                 break
         response = requests.put(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/", json={"product_id": [int(call.data)],
-                                                                                                    "cart_id": cart_user['id'],
+                                                                                                     "cart_id": cart_user['id'],
                                                                                                     "mode": mode},
                      headers={"Content-type": "application/json"})
+        if response.status_code == 404:
+            response = requests.post(f"http://127.0.0.1:8000/api/cart_product/", json={"product_id": [int(call.data)],
+                                                                                       "cart_id": cart_user['id']},
+                                     headers={"Content-type": "application/json"})
+        print(response)
+        print(response.content)
         if mode == 'update':
             bot.send_message(call.message.chat.id, text=text, reply_markup=markup_menu)
         if mode == 'remove':

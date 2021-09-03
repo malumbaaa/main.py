@@ -47,6 +47,9 @@ class CartProductList(generics.ListCreateAPIView):
     queryset = CartProduct.objects.all()
     serializer_class = CartProductSerializer
 
+    def post(self, request, *args, **kwargs):
+        return super(CartProductList, self).post(request, cart_id=request.data['cart_id'],
+                                                  product_id=request.data['product_id'])
 
 
 class CartProductDetail(generics.RetrieveUpdateDestroyAPIView):

@@ -24,6 +24,8 @@ class ProductPhotoSerializer(serializers.ModelSerializer):
 
 
 class CartSerializer(serializers.ModelSerializer):
+    def get_cart(self, customer_id):
+        return Cart.objects.get(customer_id=customer_id)
 
     class Meta:
         fields = ['id', 'customer_id']
@@ -47,6 +49,10 @@ class CartProductSerializer(serializers.ModelSerializer):
             cp.product_id.remove(product)
             print(cp.product_id)
             cp.save()
+        else:
+            print(self)
+            print(self.data)
+            # cp = CartProduct()
 
     class Meta:
         fields = ['cart_id', 'product_id']
