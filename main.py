@@ -41,6 +41,7 @@ def send_welcome(message):
             "username": message.from_user.username}
     print(data)
     requests.post("http://127.0.0.1:8000/api/customer/", data=data)
+    requests.post("http://127.0.0.1:8000/api/cart/", json={"customer_id": data['id']})
     bot.reply_to(message, "Эй, привет! Я тестовый интернет магазин!)", reply_markup=markup_menu)
 
 
@@ -149,8 +150,9 @@ def call_back_payment(call):
         cart = requests.get(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/").json()
         products = [requests.get(f"http://127.0.0.1:8000/api/product/{product_id}/").json() for product_id in
                     cart['product_id']]
+        print(cart['product_id'])
         response = requests.post("http://127.0.0.1:8000/api/order/", json={"user_id": call.message.chat.id,
-                                                                "products":[2],
+                                                                "products":cart['product_id'],
                                                                 "status": "Поступил",
                                                                 "delivery": call.data})
         print(response)

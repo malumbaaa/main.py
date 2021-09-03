@@ -44,11 +44,10 @@ class ProductPhoto(models.Model):
 
 
 class Cart(models.Model):
-    id = models.IntegerField(primary_key=True)
     customer_id = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='customer_id')
 
     def __str__(self):
-        return str(self.id)
+        return str(id)
 
     class Meta:
         verbose_name = 'Cart'
@@ -71,6 +70,7 @@ stats = [
     ('Поступил', 'Поступил'),
     ('Отправлен', 'Отправлен'),
     ('Ожидает', 'Ожидает'),
+    ("Оплачен", "Оплачен")
 ]
 
 

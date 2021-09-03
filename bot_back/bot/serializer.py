@@ -24,6 +24,7 @@ class ProductPhotoSerializer(serializers.ModelSerializer):
 
 
 class CartSerializer(serializers.ModelSerializer):
+
     def get_cart(self, customer_id):
         return Cart.objects.get(customer_id=customer_id)
 
@@ -35,24 +36,24 @@ class CartSerializer(serializers.ModelSerializer):
 class CartProductSerializer(serializers.ModelSerializer):
     def save(self, **kwargs):
         product = 0
-        print(self)
-        print(str(self).find('update'))
         for i in str(self.validated_data.get('product_id')):
             if i.isdigit():
                 product = i
-        cp = CartProduct.objects.get(cart_id=Cart.objects.get(id=self.data['cart_id']))
+        try:
+            cp = CartProduct.objects.get(cart_id=Cart.objects.get(id=self.data['cart_id']))
+        except AttributeError:
+            cart = Cart.objects.get(id=self.validated_data.get('cart_id'))
         if str(self).find('update') != -1:
             cp.product_id.add(product)
-            print(cp.product_id)
             cp.save()
         elif str(self).find('remove') != -1:
             cp.product_id.remove(product)
-            print(cp.product_id)
             cp.save()
         else:
-            print(self)
-            print(self.data)
-            # cp = CartProduct()
+            cp = CartProduct(cart_id=cart)
+            cp.save()
+            cp.product_id.add(product)
+            cp.save()
 
     class Meta:
         fields = ['cart_id', 'product_id']
@@ -63,7 +64,7 @@ class OrderSerializer(serializers.ModelSerializer):
     def save(self, **kwargs):
         print(self)
         print(self.data)
-        print(kwargs)
+        print(self.validated_data)
 
     class Meta:
         fields = ['user_id', 'products', 'money', 'date_come', 'date_out', 'status']

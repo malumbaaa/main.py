@@ -47,10 +47,6 @@ class CartProductList(generics.ListCreateAPIView):
     queryset = CartProduct.objects.all()
     serializer_class = CartProductSerializer
 
-    def post(self, request, *args, **kwargs):
-        return super(CartProductList, self).post(request, cart_id=request.data['cart_id'],
-                                                  product_id=request.data['product_id'])
-
 
 class CartProductDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = CartProduct.objects.all()
@@ -76,15 +72,16 @@ class OrderList(generics.ListCreateAPIView):
             # print(request.data['products'])
             # products = Product.objects.filter(id=request.data['products'][0]['id'])
             # print(products)
-            money = 30
-            # for i in request.data['products'][1:]:
-            #     products |= Product.objects.filter(id=i['id'])
-            #     money += i['price']
+            money = 0
+            for i in request.data['products']:
+                 product = Product.objects.get(id=i)
+                 money += int(product.price)
             # print(products, 'каго')
+            # check = Product.objects.get(id=2)
             return super(OrderList, self).post(request, user_id=customer,
                                                status=request.data['status'],
                                                money=money,
-                                               products=[2])
+                                               products=request.data['products'])
 
 
 class OrderDetail(generics.RetrieveUpdateDestroyAPIView):
