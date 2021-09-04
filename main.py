@@ -47,9 +47,6 @@ btn_in_wait = types.InlineKeyboardButton('Ожидает', callback_data='wait')
 btn_in_paid = types.InlineKeyboardButton('Оплачен', callback_data='paid')
 ilyas_inline.add(btn_in_send, btn_in_wait, btn_in_paid)
 
-def adress_step(message):
-    user_info = {}
-    user_info['name'] = message.text
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
@@ -195,11 +192,8 @@ def call_back_payment(call):
                                                                            "delivery": call.data})
         requests.delete(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/")
         if call.data == "courier" or call.data == "post":
-            msg = bot.send_message(call.message.chat.id, "Введите ваш адрес: ")
-            bot.register_next_step_handler(msg, adress_step)
+           bot.send_message(call.message.chat.id, "Введите ваш адрес: ")
         else:
-            msg = bot.send_message(call.message.chat.id, "Ваш заказ успешно принят")
-        if user.info.name == " ":
             bot.send_message(call.message.chat.id, "Ваш заказ успешно принят")
         print(response)
         print(response.content)
