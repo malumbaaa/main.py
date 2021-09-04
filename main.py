@@ -6,6 +6,9 @@ import requests
 import json
 import urllib
 
+
+
+
 bot = telebot.TeleBot(config.API_TOKEN)
 markup_menu = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
 btn_address = types.KeyboardButton('Адреса магазинов', request_location=True)
@@ -43,6 +46,10 @@ btn_in_send = types.InlineKeyboardButton('Отправлен', callback_data='se
 btn_in_wait = types.InlineKeyboardButton('Ожидает', callback_data='wait')
 btn_in_paid = types.InlineKeyboardButton('Оплачен', callback_data='paid')
 ilyas_inline.add(btn_in_send, btn_in_wait, btn_in_paid)
+
+def adress_step(message):
+    user_info = {}
+    user_info['name'] = message.text
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
@@ -127,6 +134,7 @@ def shop_location(message):
                    config.SHOPS[index]['address'])
 
 
+
 @bot.callback_query_handler(func=lambda call: True)
 def call_back_payment(call):
     products = requests.get("http://127.0.0.1:8000/api/product/").json()
@@ -187,13 +195,17 @@ def call_back_payment(call):
                                                                            "delivery": call.data})
         requests.delete(f"http://127.0.0.1:8000/api/cart_product/{cart_user['id']}/")
         if call.data == "courier" or call.data == "post":
-            bot.send_message(call.message.chat.id, "Введите ваш адрес: ")
+            msg = bot.send_message(call.message.chat.id, "Введите ваш адрес: ")
+            bot.register_next_step_handler(msg, adress_step)
         else:
+            msg = bot.send_message(call.message.chat.id, "Ваш заказ успешно принят")
+        if user.info.name == " ":
             bot.send_message(call.message.chat.id, "Ваш заказ успешно принят")
         print(response)
         print(response.content)
     elif call.data in ["send", "wait", "paid"]:
         print(call.message.text)
+
 
 
 def view_products(products, photos, chat_id, message_markup):
