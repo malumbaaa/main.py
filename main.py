@@ -35,14 +35,14 @@ markup_inline_delivery.add(btn_in_courier, btn_in_post, btn_in_pickup)
 
 ilyas_menu = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
 btn_orders = types.KeyboardButton('Посмотреть заказы')
-ilyas_menu.add(btn_orders)
+btn_ready_orders = types.KeyboardButton('Посмотреть выполненные заказы')
+ilyas_menu.add(btn_orders, btn_ready_orders)
 
 ilyas_inline = types.InlineKeyboardMarkup()
 btn_in_send = types.InlineKeyboardButton('Отправлен', callback_data='send')
 btn_in_wait = types.InlineKeyboardButton('Ожидает', callback_data='wait')
 btn_in_paid = types.InlineKeyboardButton('Оплачен', callback_data='paid')
 ilyas_inline.add(btn_in_send, btn_in_wait, btn_in_paid)
-
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
@@ -79,19 +79,32 @@ def echo_all(message):
         bot.send_message(message.chat.id, "Выберите способ доставки:",
                          reply_markup=markup_inline_delivery)
     elif message.text == "Посмотреть заказы" and message.chat.id == config.ilyas_id:
-        bot.send_message(message.chat.id, "Бля, короче тут заказы")
         response = requests.get("http://127.0.0.1:8000/api/order/").json()
         for order in response:
-            goods = "Вещи:\n"
-            for product in order['products']:
-                product_response = requests.get(f"http://127.0.0.1:8000/api/product/{product}/").json()
-                goods += f'{product_response["id"]} {product_response["name"]}\n'
-            bot.send_message(message.chat.id,
-                             f"""Пользователь {(requests.get(f"http://127.0.0.1:8000/api/customer/{order['user_id']}").json())["name"]}
-                              {goods} Заработок: {order['money']}$
-                              Дата поступления заказа: {order['date_come']}
-                              Статус: {order['status']}""", reply_markup=ilyas_inline)
-
+            if order['status'] != 'Оплачен':
+                goods = "Вещи:\n"
+                for product in order['products']:
+                    product_response = requests.get(f"http://127.0.0.1:8000/api/product/{product}/").json()
+                    goods += f'{product_response["id"]} {product_response["name"]}\n'
+                bot.send_message(message.chat.id,
+                                 f"""Пользователь {(requests.get(f"http://127.0.0.1:8000/api/customer/{order['user_id']}").json())["name"]}
+                                  {goods} Заработок: {order['money']}$
+                                  Дата поступления заказа: {order['date_come']}
+                                  Статус: {order['status']}""", reply_markup=ilyas_inline)
+    elif message.text == "Посмотреть выполненные заказы" and message.chat.id == config.ilyas_id:
+        response = requests.get("http://127.0.0.1:8000/api/order/").json()
+        for order in response:
+            if order['status'] == 'Оплачен':
+                goods = "Вещи:\n"
+                for product in order['products']:
+                    product_response = requests.get(f"http://127.0.0.1:8000/api/product/{product}/").json()
+                    goods += f'{product_response["id"]} {product_response["name"]}\n'
+                bot.send_message(message.chat.id,
+                                 f"""Пользователь {(requests.get(f"http://127.0.0.1:8000/api/customer/{order['user_id']}").json())["name"]}
+                                         {goods} Заработок: {order['money']}$
+                                         Дата поступления заказа: {order['date_come']}
+                                         Дата выполнения заказа: {order['date_out']}
+                                         Статус: {order['status']}""")
     else:
         bot.reply_to(message, "Не могу тебя понять, напиши /help")
 
@@ -179,6 +192,8 @@ def call_back_payment(call):
             bot.send_message(call.message.chat.id, "Ваш заказ успешно принят")
         print(response)
         print(response.content)
+    elif call.data in ["send", "wait", "paid"]:
+        print(call.message.text)
 
 
 def view_products(products, photos, chat_id, message_markup):
