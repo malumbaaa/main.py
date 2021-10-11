@@ -49,7 +49,7 @@ ilyas_inline.add(btn_in_send, btn_in_wait, btn_in_paid)
 
 
 @bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
+async def send_welcome(message):
     response = requests.get(f"http://127.0.0.1:8000/api/customer/{int(message.from_user.id)}/",
                             headers={"Content-type": "application/json"})
     if response.status_code == 404:
@@ -114,7 +114,7 @@ def echo_all(message):
 
 
 @bot.message_handler(func=lambda message: True, content_types=['location'])
-def shop_location(message):
+async def shop_location(message):
     lon = message.location.longitude
     lat = message.location.latitude
 
