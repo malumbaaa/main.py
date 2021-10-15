@@ -63,6 +63,17 @@ async def send_welcome(message):
     else:
         bot.reply_to(message, "Эй, привет! Я тестовый интернет магазин!)", reply_markup=markup_menu)
 
+async def interview():
+    await bot.send_message(12313, ' Test')
+
+def update():
+    event_loop = asyncio.get_event_loop()
+    event_loo.run_until_complete(interview())
+    event_loop.run_forever()
+    threading.Timer(2, update).start
+
+update()
+
 
 @bot.message_handler(func=lambda message: True)
 def echo_all(message):
